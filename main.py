@@ -66,7 +66,7 @@ def training_pipeline(
         model = model.to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
         criterion = torch.nn.CrossEntropyLoss()
-        scaler = torch.amp.GradScaler("cuda")
+        scaler = torch.amp.GradScaler("cuda") if (mixed_precision and device == "cuda") else None
 
         best_loss = float("inf")
         wait = 0
@@ -78,7 +78,9 @@ def training_pipeline(
             model.train()
             running_loss, running_correct, total = 0.0, 0, 0
 
-            autocast_ctx = torch.amp.autocast(device_type=device) if mixed_precision else nullcontext()
+            autocast_ctx = (
+                torch.amp.autocast(device_type="cuda") if (mixed_precision and device == "cuda") else nullcontext()
+            )
 
             # Training
             for images, labels in tqdm(train_loader, desc=f"[{model_name}] Epoch {epoch}", leave=False):
@@ -88,11 +90,14 @@ def training_pipeline(
                 with autocast_ctx:
                     outputs = model(images)
                     loss = criterion(outputs, labels)
-                    # loss.backward()
 
-                scaler.scale(loss).backward()
-                scaler.step(optimizer)
-                scaler.update()
+                if scaler is not None:
+                    scaler.scale(loss).backward()
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    loss.backward()
+                    optimizer.step()
 
                 # Gradient health check
                 grad_mean = sum(
@@ -100,8 +105,6 @@ def training_pipeline(
                 ) / sum(1 for p in model.parameters() if p.grad is not None)
                 if grad_mean < 1e-4:
                     print(f"[{model_name}] Warning: very low grad mean ({grad_mean:.2e})")
-
-                # optimizer.step()
 
                 running_loss += loss.item() * images.size(0)
                 _, predicted = torch.max(outputs, 1)

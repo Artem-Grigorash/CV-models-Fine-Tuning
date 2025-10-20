@@ -1,13 +1,32 @@
 import torch
-from torchvision.models import vit_b_16, resnet152, swin_s
+from torchvision.models import (
+    vit_b_16, resnet152, swin_s,
+    ViT_B_16_Weights, ResNet152_Weights, Swin_S_Weights,
+)
 
-VIT_MODEL = vit_b_16()
-SWIN_MODEL = swin_s()
-RESNET_MODEL = resnet152()
+# Use pretrained ImageNet weights to improve convergence on small datasets
+VIT_MODEL = vit_b_16(weights=ViT_B_16_Weights.DEFAULT)
+SWIN_MODEL = swin_s(weights=Swin_S_Weights.DEFAULT)
+RESNET_MODEL = resnet152(weights=ResNet152_Weights.DEFAULT)
 
-VIT_MODEL.heads.head = torch.nn.Linear(in_features=VIT_MODEL.heads.head.in_features, out_features=2)
-SWIN_MODEL.head = torch.nn.Linear(in_features=SWIN_MODEL.head.in_features, out_features=2)
-RESNET_MODEL.fc = torch.nn.Linear(in_features=RESNET_MODEL.fc.in_features, out_features=2)
+VIT_MODEL.heads = torch.nn.Sequential(
+    torch.nn.Linear(in_features=VIT_MODEL.heads.head.in_features, out_features=256),
+    torch.nn.ReLU(),
+    torch.nn.Dropout(0.2),
+    torch.nn.Linear(in_features=256, out_features=2),
+)
+SWIN_MODEL.head = torch.nn.Sequential(
+    torch.nn.Linear(in_features=SWIN_MODEL.head.in_features, out_features=256),
+    torch.nn.ReLU(),
+    torch.nn.Dropout(0.2),
+    torch.nn.Linear(in_features=256, out_features=2),
+)
+RESNET_MODEL.fc = torch.nn.Sequential(
+    torch.nn.Linear(in_features=RESNET_MODEL.fc.in_features, out_features=256),
+    torch.nn.ReLU(),
+    torch.nn.Dropout(0.2),
+    torch.nn.Linear(in_features=256, out_features=2),
+)
 
 # list with pre-trained models
 models = [RESNET_MODEL, SWIN_MODEL, VIT_MODEL]
