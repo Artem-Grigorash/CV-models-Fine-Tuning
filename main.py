@@ -149,7 +149,7 @@ def training_pipeline(
 
         # Testing
         model.eval()
-        test_correct, test_total = 0, 0, 0
+        test_correct, test_total = 0, 0
         with torch.no_grad():
             for images, labels in test_loader:
                 images, labels = images.to(device), labels.to(device)
