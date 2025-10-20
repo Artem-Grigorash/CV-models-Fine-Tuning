@@ -1,0 +1,15 @@
+# Dataset
+image_size: 224
+
+# Hyperparameters
+learning_rate: 0.0001 # it's a magic number
+weight_decay: 0.000005
+batch_size: 50
+patience: 20
+seed: 1337
+
+# train
+num_epochs: 80
+mixed_precision: True
+save_checkpoint: False
+checkpoint_path: ./checkpoints
