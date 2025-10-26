@@ -1,4 +1,5 @@
 import torch
+import timm
 from torchvision.models import (
     vit_b_16, resnet152, swin_s,
     ViT_B_16_Weights, ResNet152_Weights, Swin_S_Weights,
@@ -8,6 +9,19 @@ from torchvision.models import (
 VIT_MODEL = vit_b_16(weights=ViT_B_16_Weights.DEFAULT)
 SWIN_MODEL = swin_s(weights=Swin_S_Weights.DEFAULT)
 RESNET_MODEL = resnet152(weights=ResNet152_Weights.DEFAULT)
+DINO_MODEL = timm.create_model("vit_base_patch16_dinov3", pretrained=True)
+
+# У модели нет .head, только num_features
+in_features = DINO_MODEL.num_features
+
+# Добавляем свою классификационную голову
+DINO_MODEL.head = torch.nn.Sequential(
+    torch.nn.Linear(in_features, 256),
+    torch.nn.ReLU(),
+    torch.nn.Dropout(0.2),
+    torch.nn.Linear(256, 2),
+)
+
 
 VIT_MODEL.heads = torch.nn.Sequential(
     torch.nn.Linear(in_features=VIT_MODEL.heads.head.in_features, out_features=256),
@@ -29,7 +43,7 @@ RESNET_MODEL.fc = torch.nn.Sequential(
 )
 
 # list with pre-trained models
-models = [RESNET_MODEL, SWIN_MODEL, VIT_MODEL]
+models = [DINO_MODEL]
 
 
 def get_model_parameters(_model):

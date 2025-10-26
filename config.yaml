@@ -9,7 +9,7 @@ patience: 10
 seed: 1337
 
 # train
-num_epochs: 80
+num_epochs: 20
 mixed_precision: True
 save_checkpoint: False
 checkpoint_path: ./checkpoints
